@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Executor</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <div id="app" class="container mt-5">
+    <h1>windows cmd Executor</h1>
+    <h5>the executer forget every time you click the execute button all the history and go back to the html file root folder</h5>
+    <br>
+    <div class="form-group">
+      <label for="command">Enter Command:</label>
+      <textarea id="command" v-model="command" class="form-control" rows="3"></textarea>
+    </div>
+    <button @click="executeCommand" class="btn btn-primary">Execute</button>
+    <hr>
+    <div v-for="(result, index) in results" :key="index" class="terminal">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title">{{ result.command }} - {{ result.time }}</h5>
+          <button @click="copyToClipboard(result.command)" class="btn btn-sm btn-secondary mr-2">Copy Command</button>
+          <button @click="deleteResult(index)" class="btn btn-sm btn-danger">Delete</button>
+        </div>
+        <div class="card-body">
+          <pre>{{ result.output }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        command: '',
+        results: []
+      },
+      methods: {
+        executeCommand() {
+          fetch('http://localhost:3000/execute', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ command: this.command })
+          })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+              }
+             // return response.text().replace(/\\n/g, '\n');
+              return response.text() ;
+            })
+            .then(data => {
+ console.log (data);
+					
+              this.results.unshift({
+                command: this.command,
+                time: new Date().toLocaleString(),
+                output: data
+              });
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              this.results.unshift({
+                command: this.command,
+                time: new Date().toLocaleString(),
+                output: 'Error executing command. Please try again.'
+              });
+            });
+        },
+        deleteResult(index) {
+          this.results.splice(index, 1);
+        },
+        copyToClipboard(command) {
+          navigator.clipboard.writeText(command)
+            .then(() => {
+              alert('Command copied to clipboard!');
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Failed to copy command to clipboard.');
+            });
+        }
+      }
+    });
+  </script>
+</body>
+</html>
